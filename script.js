@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  var EMAIL = 'ntrmaruthi72@gmail.com';
+  var FORMSPREE_URL = 'https://formspree.io/f/xeaoppbq';
 
   var nav = document.getElementById('site-nav');
   var toggle = nav.querySelector('.nav__toggle');
@@ -138,7 +138,7 @@
   }
 
   /* ----------------------------------------------------------------------
-     5. Contact form — validation, then hand the message to the mail app
+     5. Contact form — validation, then submit via Formspree (fetch/AJAX)
      ---------------------------------------------------------------------- */
   var form = document.getElementById('contact-form');
 
@@ -209,21 +209,40 @@
         return;
       }
 
-      var name = document.getElementById('name').value.trim();
-      var email = document.getElementById('email').value.trim();
-      var subject = document.getElementById('subject').value.trim();
-      var message = document.getElementById('message').value.trim();
+      var payload = {
+        name: document.getElementById('name').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        subject: document.getElementById('subject').value.trim(),
+        message: document.getElementById('message').value.trim()
+      };
 
-      var mailSubject = encodeURIComponent(subject);
-      var mailBody = encodeURIComponent(
-        'Name: ' + name + '\n' +
-        'Email: ' + email + '\n\n' +
-        message
-      );
+      var submitBtn = form.querySelector('[type="submit"]');
+      submitBtn.disabled = true;
+      statusEl.textContent = 'Sending…';
 
-      statusEl.textContent = 'Opening your email app…';
-      window.location.href = 'mailto:' + EMAIL +
-        '?subject=' + mailSubject + '&body=' + mailBody;
+      fetch(FORMSPREE_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      }).then(function (response) {
+        if (!response.ok) {
+          throw new Error('Formspree request failed with status ' + response.status);
+        }
+        return response.json().catch(function () { return {}; });
+      }).then(function () {
+        statusEl.textContent = 'Message sent successfully. I will get back to you soon.';
+        form.reset();
+        fields.forEach(function (input) {
+          showFieldState(input, '');
+        });
+      }).catch(function () {
+        statusEl.textContent = 'Something went wrong. Please try again or email me directly at ntrmaruthi72@gmail.com.';
+      }).then(function () {
+        submitBtn.disabled = false;
+      });
     });
   }
 })();
